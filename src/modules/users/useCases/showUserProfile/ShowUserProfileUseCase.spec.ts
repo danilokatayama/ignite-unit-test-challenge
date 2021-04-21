@@ -1,4 +1,5 @@
 import { hash } from 'bcryptjs';
+
 import { InMemoryUsersRepository } from '../../repositories/in-memory/InMemoryUsersRepository';
 import { ShowUserProfileError } from './ShowUserProfileError';
 import { ShowUserProfileUseCase } from './ShowUserProfileUseCase';
@@ -7,7 +8,6 @@ let showUserProfileUseCase: ShowUserProfileUseCase;
 let usersRepository: InMemoryUsersRepository;
 
 describe('AuthenticateUser useCase', () => {
-
   beforeEach(() => {
     usersRepository = new InMemoryUsersRepository();
     showUserProfileUseCase = new ShowUserProfileUseCase(usersRepository);
@@ -29,7 +29,7 @@ describe('AuthenticateUser useCase', () => {
 
   it('should not be able to show profile from a non-existent user', async () => {
     await expect(
-      showUserProfileUseCase.execute('unexistent-user')
+      showUserProfileUseCase.execute('unexistent-user'),
     ).rejects.toBeInstanceOf(ShowUserProfileError);
   });
 });

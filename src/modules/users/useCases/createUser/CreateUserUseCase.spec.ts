@@ -13,7 +13,9 @@ describe('Create User Use Case', () => {
 
   it('should be able to create a new user', async () => {
     const user = await createUserUseCase.execute({
-      name: 'User', email: 'example@example.com', password: 'password'
+      name: 'User',
+      email: 'example@example.com',
+      password: 'password',
     });
 
     expect(user).toHaveProperty('id');
@@ -21,13 +23,17 @@ describe('Create User Use Case', () => {
 
   it('should not be able to create a new user with an email already created', async () => {
     await createUserUseCase.execute({
-      name: 'User', email: 'example@example.com', password: 'password'
+      name: 'User',
+      email: 'example@example.com',
+      password: 'password',
     });
 
     await expect(
       createUserUseCase.execute({
-        name: 'User', email: 'example@example.com', password: 'password'
-      })
+        name: 'User',
+        email: 'example@example.com',
+        password: 'password',
+      }),
     ).rejects.toBeInstanceOf(CreateUserError);
   });
 });
