@@ -7,6 +7,7 @@ import { app } from '../../../../app';
 
 let connection: Connection;
 let authToken: string;
+const receiver_id = uuid();
 
 describe('Create Statement Controller', () => {
   beforeAll(async () => {
@@ -18,6 +19,12 @@ describe('Create Statement Controller', () => {
     await connection.query(
       `INSERT INTO users(id, name, email, password, created_at, updated_at)
       VALUES('${uuid()}', 'User Test', 'user@email.com', '${password}', 'now()', 'now()')
+      `,
+    );
+
+    await connection.query(
+      `INSERT INTO users(id, name, email, password, created_at, updated_at)
+      VALUES('${receiver_id}', 'Receiver Test', 'receiver@email.com', '${password}', 'now()', 'now()')
       `,
     );
 
@@ -78,5 +85,35 @@ describe('Create Statement Controller', () => {
       });
 
     expect(response.status).toBe(400);
+  });
+
+  it('should be able to create a transfer statement', async () => {
+    const response = await request(app)
+      .post(`/api/v1/statements/transfer/${receiver_id}`)
+      .send({
+        amount: 200,
+        description: 'Transfer description',
+      })
+      .set({
+        Authorization: `Bearer ${authToken}`,
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty('id');
+    expect(response.body.amount).toBe(200);
+  });
+
+  it('should not be able to create a transfer statement to non-existent user', async () => {
+    const response = await request(app)
+      .post('/api/v1/statements/tranfer/non-existent-user')
+      .send({
+        amount: 300,
+        description: 'Transfer description',
+      })
+      .set({
+        Authorization: `Bearer ${authToken}`,
+      });
+
+    expect(response.status).toBe(404);
   });
 });

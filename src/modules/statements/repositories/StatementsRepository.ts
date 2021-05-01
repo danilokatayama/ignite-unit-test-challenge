@@ -1,6 +1,6 @@
 import { getRepository, Repository } from 'typeorm';
 
-import { Statement } from '../entities/Statement';
+import { OperationType, Statement } from '../entities/Statement';
 import { ICreateStatementDTO } from '../useCases/createStatement/ICreateStatementDTO';
 import { IGetBalanceDTO } from '../useCases/getBalance/IGetBalanceDTO';
 import { IGetStatementOperationDTO } from '../useCases/getStatementOperation/IGetStatementOperationDTO';
@@ -15,10 +15,31 @@ export class StatementsRepository implements IStatementsRepository {
 
   async create({
     user_id,
+    receiver_id,
     amount,
     description,
     type,
   }: ICreateStatementDTO): Promise<Statement> {
+    if (type === OperationType.TRANSFER) {
+      const senderStatement = this.repository.create({
+        user_id,
+        amount,
+        description,
+        type,
+      });
+
+      const receiverStatement = this.repository.create({
+        user_id: receiver_id,
+        sender_id: user_id,
+        amount,
+        description,
+        type,
+      });
+
+      await this.repository.save(receiverStatement);
+      return this.repository.save(senderStatement);
+    }
+
     const statement = this.repository.create({
       user_id,
       amount,
@@ -49,10 +70,26 @@ export class StatementsRepository implements IStatementsRepository {
     });
 
     const balance = statement.reduce((acc, operation) => {
-      if (operation.type === 'deposit') {
-        return acc + operation.amount;
+      let total = acc;
+      switch (operation.type) {
+        case OperationType.DEPOSIT:
+          total += Number(operation.amount);
+          break;
+        case OperationType.WITHDRAW:
+          total -= Number(operation.amount);
+          break;
+        case OperationType.TRANSFER:
+          if (operation.sender_id) {
+            total += Number(operation.amount);
+          } else {
+            total -= Number(operation.amount);
+          }
+          break;
+        default:
+          break;
       }
-      return acc - operation.amount;
+
+      return total;
     }, 0);
 
     if (with_statement) {

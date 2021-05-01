@@ -10,9 +10,10 @@ import { v4 as uuid } from 'uuid';
 
 import { User } from '../../users/entities/User';
 
-enum OperationType {
+export enum OperationType {
   DEPOSIT = 'deposit',
   WITHDRAW = 'withdraw',
+  TRANSFER = 'transfer',
 }
 
 @Entity('statements')
@@ -29,6 +30,9 @@ export class Statement {
 
   @Column()
   description: string;
+
+  @Column()
+  sender_id?: string;
 
   @Column('decimal', { precision: 6, scale: 2 })
   amount: number;

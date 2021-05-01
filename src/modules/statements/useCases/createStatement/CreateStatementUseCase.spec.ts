@@ -1,4 +1,5 @@
 import { InMemoryUsersRepository } from '../../../users/repositories/in-memory/InMemoryUsersRepository';
+import { OperationType } from '../../entities/Statement';
 import { InMemoryStatementsRepository } from '../../repositories/in-memory/InMemoryStatementsRepository';
 import { CreateStatementError } from './CreateStatementError';
 import { CreateStatementUseCase } from './CreateStatementUseCase';
@@ -27,7 +28,7 @@ describe('Create Statement Use Case', () => {
     const statement = await createStatementUseCase.execute({
       user_id: user.id!,
       amount: 123,
-      type: 'deposit' as any,
+      type: OperationType.DEPOSIT,
       description: 'Deposit description',
     });
 
@@ -39,7 +40,7 @@ describe('Create Statement Use Case', () => {
       createStatementUseCase.execute({
         user_id: 'non-existent-user',
         amount: 123,
-        type: 'deposit' as any,
+        type: OperationType.DEPOSIT,
         description: 'Deposit description',
       }),
     ).rejects.toBeInstanceOf(CreateStatementError.UserNotFound);
@@ -56,7 +57,49 @@ describe('Create Statement Use Case', () => {
       createStatementUseCase.execute({
         user_id: user.id!,
         amount: 123,
-        type: 'withdraw' as any,
+        type: OperationType.WITHDRAW,
+        description: 'Withdraw description',
+      }),
+    ).rejects.toBeInstanceOf(CreateStatementError.InsufficientFunds);
+  });
+
+  it('should not be able to create a new statement (transfer) to a non-existent user', async () => {
+    const user = await inMemoryUsersRepository.create({
+      name: 'User',
+      email: 'example@example.com',
+      password: '123456',
+    });
+
+    await expect(
+      createStatementUseCase.execute({
+        user_id: user.id!,
+        receiver_id: 'unexistent user',
+        amount: 123,
+        type: OperationType.TRANSFER,
+        description: 'Withdraw description',
+      }),
+    ).rejects.toBeInstanceOf(CreateStatementError.UserNotFound);
+  });
+
+  it('should not be able to create a new statement (transfer) with insufficient funds', async () => {
+    const sender = await inMemoryUsersRepository.create({
+      name: 'Sender',
+      email: 'sender@example.com',
+      password: '123456',
+    });
+
+    const receiver = await inMemoryUsersRepository.create({
+      name: 'Receiver',
+      email: 'receiver@example.com',
+      password: '123456',
+    });
+
+    await expect(
+      createStatementUseCase.execute({
+        user_id: sender.id!,
+        receiver_id: receiver.id!,
+        amount: 123,
+        type: OperationType.TRANSFER,
         description: 'Withdraw description',
       }),
     ).rejects.toBeInstanceOf(CreateStatementError.InsufficientFunds);
